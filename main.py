@@ -1,24 +1,32 @@
 import Nodes
 
 
+def printNodes(env):
+    print("####################")
+    for n in env.nodes:
+        n.printNode()
+
+
 def main():
     env = Nodes.Environement(6, 3, 10, 5, 2, 4)
+    printNodes(env)
+
+    env.birthRabbit()
+
+    printNodes(env)
+
+    env.activeRabbits()
+    env.activeRabbits()
+    printNodes(env)
 
     env.birthTiger()
-    env.birthRabbit()
-    env.activeRabbits()
+    env.birthTiger()
+    env.birthTiger()
+    env.birthTiger()
+    printNodes(env)
+
     env.activeTigers()
-
-    for n in env.nodes:
-        n.printNode()
-
-    env.printReward()
-    env.activeDinosaurs()
-
-    for n in env.nodes:
-        n.printNode()
-
-    env.printReward()
+    printNodes(env)
 
 
 main()

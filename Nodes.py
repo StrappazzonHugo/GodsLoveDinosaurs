@@ -82,6 +82,7 @@ class Environement:
 # Method need for actions brithTiger and birthRabbit
 #
 
+
     def check_any_empty_node(self):
         b = False
         for n in self.nodes:
@@ -95,19 +96,28 @@ class Environement:
         else:
             return False
 
+    def get_empty_nodes(self):
+        empty = []
+        for n in self.nodes:
+            if n.get_state() == State.Empty:
+                empty.append(n.get_id())
+        return empty
+
 # Every actions of the Player
 
     def birthTiger(self):
         self.reward -= self.CT
         if self.check_any_empty_node():
-            random_id = math.floor(random.random() * self.nb_nodes)
-            self.nodes[random_id].set_state(2)
+            emptylist = self.get_empty_nodes()
+            random_id = random.choice(emptylist)
+            self.nodes[random_id].set_state(State.Tiger)
 
     def birthRabbit(self):
         self.reward -= self.CR
         if self.check_any_empty_node():
-            random_id = math.floor(random.random() * self.nb_nodes)
-            self.nodes[random_id].set_state(1)
+            emptylist = self.get_empty_nodes()
+            random_id = random.choice(emptylist)
+            self.nodes[random_id].set_state(State.Rabbit)
 
     def activeRabbits(self):
         rabbit_list = []
@@ -130,6 +140,8 @@ class Environement:
                 self.nodes[i].get_left().set_state(State.Tiger)
             if self.nodes[i].get_left().get_left().get_state() == State.Rabbit:
                 self.nodes[i].get_left().get_left().set_state(State.Tiger)
+        for i in tiger_list:
+            self.nodes[i].set_state(State.Empty)
 
     def activeDinosaurs(self):
         s = numpy.random.uniform(0, self.nb_nodes, self.K)
