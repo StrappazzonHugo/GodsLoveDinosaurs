@@ -1,6 +1,7 @@
 from enum import Enum
 import random
 import math
+import numpy
 
 
 class State(Enum):
@@ -60,21 +61,26 @@ class Node:
 
 class Environement:
 
-    def __init__(self, nb_cell):
+    def __init__(self, N, K, W, L, CR, CT):
         self.nodes = []
-        self.nb_nodes = nb_cell
         self.reward = 0
+        self.nb_nodes = N
+        self.K = K
+        self.N = N
+        self.W = W
+        self.L = L
+        self.CR = CR
+        self.CT = CT
 
-        for i in range(nb_cell):
+        for i in range(self.N):
             self.nodes.append(Node(i, 0))
-        for i in range(nb_cell):
-            self.nodes[i].set_right_nb(self.nodes[(i-1) % nb_cell])
-            self.nodes[i].set_left_nb(self.nodes[(i+1) % nb_cell])
+        for i in range(self.N):
+            self.nodes[i].set_right_nb(self.nodes[(i-1) % self.N])
+            self.nodes[i].set_left_nb(self.nodes[(i+1) % self.N])
 
 
 # Method need for actions brithTiger and birthRabbit
 #
-
 
     def check_any_empty_node(self):
         b = False
@@ -92,11 +98,13 @@ class Environement:
 # Every actions of the Player
 
     def birthTiger(self):
+        self.reward -= self.CT
         if self.check_any_empty_node():
             random_id = math.floor(random.random() * self.nb_nodes)
             self.nodes[random_id].set_state(2)
 
     def birthRabbit(self):
+        self.reward -= self.CR
         if self.check_any_empty_node():
             random_id = math.floor(random.random() * self.nb_nodes)
             self.nodes[random_id].set_state(1)
@@ -109,7 +117,7 @@ class Environement:
         for i in rabbit_list:
             if self.nodes[i].get_left().get_state() == State.Empty:
                 self.nodes[i].get_left().set_state(State.Rabbit)
-            if self.nodes[i].get_right()().get_state() == State.Empty:
+            if self.nodes[i].get_right().get_state() == State.Empty:
                 self.nodes[i].get_right().set_state(State.Rabbit)
 
     def activeTigers(self):
@@ -120,9 +128,32 @@ class Environement:
         for i in tiger_list:
             if self.nodes[i].get_left().get_state() == State.Rabbit:
                 self.nodes[i].get_left().set_state(State.Tiger)
-            # Ici on vient de se rendre compte que faire get_left et i+1 c'etait pareil =)
-            if self.nodes[i+2].get_state() == State.Rabbit:
-                self.nodes[i+2].set_state(State.Tiger)
+            if self.nodes[i].get_left().get_left().get_state() == State.Rabbit:
+                self.nodes[i].get_left().get_left().set_state(State.Tiger)
 
     def activeDinosaurs(self):
-        # TODO!
+        s = numpy.random.uniform(0, self.nb_nodes, self.K)
+        s = numpy.asarray(s)
+        t = []
+        for i in range(len(s)):
+            t.append(math.floor(s[i]))
+        print("s =", t)
+        tigers = 0
+        rabbits = 0
+        empty = 0
+        for i in t:
+            curr = self.nodes[i]
+            if curr.get_state() == State.Tiger:
+                tigers += 1
+            if curr.get_state() == State.Rabbit:
+                rabbits += 1
+            if curr.get_state() == State.Empty:
+                empty += 1
+            curr.set_state(State.Empty)
+        if tigers == 0 and rabbits == 0:
+            self.reward -= self.L
+        if tigers != 0:
+            self.reward += tigers*self.W
+
+    def printReward(self):
+        print("reward = ", self.reward)
