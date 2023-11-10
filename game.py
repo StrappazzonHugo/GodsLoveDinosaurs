@@ -75,14 +75,16 @@ class Game:
         self.score_history = [self.score]
         self.action_history = []
 
-        ### for i, s in enumerate(self.state_space[:20]):
-        ###     for a in Action:
-        ###         probas = self.probas[i, a.value]
-        ###         for j, p in enumerate(probas):
-        ###             if p > 0:
-        ###                 print(f"State: {s}, action: {a.name} =[P = {p}]=> {self.state_space[j]}")
-        ###         print("_____")
-        ###     print("============")
+        for i, s in enumerate(self.state_space[:20]):
+            for a in Action:
+                probas = self.probas[i, a.value]
+                for j, p in enumerate(probas):
+                    if p > 0:
+                        print(
+                            f"State: {s}, action: {a.name} =[P = {p}]=> {self.state_space[j]}"
+                        )
+                print("_____")
+            print("============")
 
     @property
     def time(self):
@@ -190,7 +192,8 @@ class Game:
         self._typecheck_state(state)
 
         result = []
-        next_states = []
+        # possible_next_states = []
+        # states_count = []
 
         # Get all combinations of 3 nodes indices amongst N
         for indices in itertools.combinations(range(self.N), self.K):
@@ -217,19 +220,25 @@ class Game:
                 reward = eaten_tigers * self.W
 
             # NOTE: Temporary proba used here, adjusted after
-            if next_state in next_states:
-                i = next_states.index(next_state)
-                _, proba, _ = result[i]
-                result[i] = [next_state, proba, reward]
-            else:
-                next_states.append(next_state)
-                result.append([next_state, 1, reward])
+            result.append([next_state, 1, reward])
 
+        ###
         # Adjust the probas
-        for e in result:
-            e[1] /= len(result)
+        adjusted_result = []
 
-        return result
+        # First get unique next states
+        unique_results = []
+        for res in result:
+            if res not in unique_results:
+                unique_results.append(res)
+
+        # Count them among results and compute next state proba
+        for res in unique_results:
+            count = result.count(res)
+            s, _, r = res
+            adjusted_result.append([s, count / len(result), r])
+
+        return adjusted_result
 
     def birth(self, state, creature):
         """Apply one of actions BR or BT on state."""
