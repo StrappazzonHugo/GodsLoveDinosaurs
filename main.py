@@ -11,7 +11,7 @@ class Modes(Enum):
 def main():
     mode = Modes.SOLVE
 
-    env = Game(6, 3, 10, 100, 2, 20)
+    env = Game(6, 3, 30, 200, 30, 50)
 
     if mode == Modes.SOLVE:
         epsilon = 1e-2

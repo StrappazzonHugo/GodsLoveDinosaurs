@@ -314,7 +314,7 @@ class Game:
             opt_action = opt_policy[self.state_space.index(self.state)]
             _, reward = self.play_action(opt_action)
 
-            if i % 100 == 0:
+            if i % (n//10) == 0:
                 print(f"At t = {i}, in state {state}: \n"
                       f"- playing optimal action {opt_action.name} for reward {reward}\n"
                       f"- current average gain is {np.mean(self.reward_history)}\n" 
@@ -458,7 +458,7 @@ class Game:
             # Iterate over states
             for i in range(self.card_S):
                 v_new = -1e6
-                best_a = None
+                ## best_a = None
 
                 # Find best action
                 for a in Action:
@@ -472,16 +472,33 @@ class Game:
                     # If better, save it, best action from s is a
                     if v_temp > v_new:
                         v_new = v_temp
-                        best_a = a
+                        ## best_a = a
 
                 # Update
                 v[i] = v_new
-                opt_policy[i] = best_a
+                ## opt_policy[i] = best_a
 
             # Count
             n += 1
 
         print(f"Iterated {n} times.")
+
+        ## count = 0 ##
+        for i in range(self.card_S):
+            maxi = -1e6
+            for a in Action:
+                p = self.probas[i, a.value, :]
+                r = self.rewards[i, a.value, :]
+
+                gain = np.sum([p * (r + v)])
+                if gain > maxi:
+                    maxi = gain
+                    ## if opt_policy[i] != a: ##
+                    ##     count += 1 ##
+                    opt_policy[i] = a
+
+        ## print(f"Changed {count} optimal actions") ##
+            
 
         return (v - v_last)[0], opt_policy
 
