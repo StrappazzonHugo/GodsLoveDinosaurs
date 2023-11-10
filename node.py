@@ -1,5 +1,6 @@
 from creature_action import Creature
 
+
 class Node:
     """
     Class describing a given Node on the board.
@@ -26,7 +27,8 @@ class Node:
             )
         if index < 0:
             raise ValueError(
-                f"'index' argument should be non-negative but " f"found '{index}'."
+                f"'index' argument should be non-negative but "
+                f"found '{index}'."
             )
 
         self._index = index
@@ -34,7 +36,7 @@ class Node:
     @property
     def creature(self):
         return self._creature
-    
+
     @creature.setter
     def creature(self, creature):
         if not isinstance(creature, (int, Creature)):
@@ -56,6 +58,7 @@ class Node:
 
     @property
     def creature_symbol(self):
+        """Returns symbol ' ', 'R' or 'T' for the creature."""
         if self.creature == Creature.Empty:
             return " "
         elif self.creature == Creature.Rabbit:
@@ -68,10 +71,10 @@ class Node:
 
     def __repr__(self):
         return self.__str__()
-    
+
     def print_node(self):
         print("index = ", self.index, " creature =", self.creature)
-    
+
     # Equality and copy implementations
 
     def __eq__(self, other):
@@ -85,4 +88,3 @@ class Node:
 # current attribute : state -> list of node
 #                     nb_state -> number of state
 #                     reward -> current number of points ?? (not used yet)
-

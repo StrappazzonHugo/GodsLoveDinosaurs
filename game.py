@@ -28,7 +28,7 @@ class Game:
         self.CR = CR
         self.CT = CT
 
-        # State space as a { , R, T}^N product iterated into a list of lists
+        # State space as a { , R, T}^N product iterated into a list of States
 
         # All combinations of Creatures as a list [*[C, C, C]]
         creature_combinations = [
@@ -241,9 +241,7 @@ class Game:
 
         reward = -self.CR if creature == Creature.Rabbit else -self.CT
 
-        empty_nodes = [
-            node for node in state if node.creature == Creature.Empty
-        ]
+        empty_nodes = state.get_empty()
         N_empty = len(empty_nodes)
 
         # No empty nodes, action does nothing
@@ -292,6 +290,8 @@ class Game:
     # Functions to play the game step by step
 
     def play(self, action):
+        """Play action on current state of the game.
+        Updates the board, score and histories."""
         self._typecheck_action(action)
 
         next_state, reward = self.next_state_and_reward(self.state, action)
