@@ -1,32 +1,49 @@
-import Nodes
+from enum import Enum
+
+from game import Game
+from creature_action import Action
 
 
-def printNodes(env):
-    print("####################")
-    for n in env.nodes:
-        n.printNode()
+class Modes(Enum):
+    PLAY = 0
+    SOLVE = 1
 
 
 def main():
-    env = Nodes.Environement(6, 3, 10, 5, 2, 4)
-    printNodes(env)
+    mode = Modes.SOLVE
 
-    env.birthRabbit()
+    env = Game(6, 3, 10, 5, 1, 7)
 
-    printNodes(env)
+    if mode == Modes.SOLVE:
+        epsilon = 1e-5
+        res, opt_policy = env.value_iteration(epsilon)
 
-    env.activeRabbits()
-    env.activeRabbits()
-    printNodes(env)
+        for i, s in enumerate(env.state_space[:20]):
+            a = Action(opt_policy[i])
+            print(f"Optimal policy for state {s} is {a.name}.")
 
-    env.birthTiger()
-    env.birthTiger()
-    env.birthTiger()
-    env.birthTiger()
-    printNodes(env)
+        print(f"Found opt avg gain = {res}.")
 
-    env.activeTigers()
-    printNodes(env)
+    else:
+        env.plot_state()
+
+        action_list = [
+            "BR",
+            *["AR" for _ in range(2)],
+            *["BT" for _ in range(2)],
+            "AT",
+            "AD",
+            *["BR" for _ in range(2)],
+            "BT",
+            "AT",
+            "AD",
+        ]
+        action_list = [Action[a] for a in action_list]
+
+        for a in action_list:
+            print(f"Playing action {a.name}.")
+            env.play(a)
+            env.plot_state()
 
 
 main()
