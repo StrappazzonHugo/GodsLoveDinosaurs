@@ -1,6 +1,7 @@
 import itertools
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.widgets import Button
 
 from creature_action import Creature, Action
 from state import State
@@ -73,18 +74,29 @@ class Game:
         self.score = 0
         self.state_history = [self.state]
         self.score_history = [self.score]
+        self.reward_history = []
         self.action_history = []
 
-        for i, s in enumerate(self.state_space[:20]):
-            for a in Action:
-                probas = self.probas[i, a.value]
-                for j, p in enumerate(probas):
-                    if p > 0:
-                        print(
-                            f"State: {s}, action: {a.name} =[P = {p}]=> {self.state_space[j]}"
-                        )
-                print("_____")
-            print("============")
+        # Create a plot
+        self.fig = plt.figure(figsize=(5, 5))
+        self.ax = self.fig.subplots()
+        self.ax.set_aspect("equal")
+
+        # Coordinates of nodes on the board
+        angles = 2 * np.pi * np.array([n.index for n in self.state]) / self.N
+        self.x = np.sin(angles)
+        self.y = np.cos(angles)
+
+        # for i, s in enumerate(self.state_space[:20]):
+        #     for a in Action:
+        #         probas = self.probas[i, a.value]
+        #         for j, p in enumerate(probas):
+        #             if p > 0:
+        #                 print(
+        #                     f"State: {s}, action: {a.name} =[P = {p}]=> {self.state_space[j]}"
+        #                 )
+        #         print("_____")
+        #     print("============")
 
     @property
     def time(self):
@@ -192,8 +204,6 @@ class Game:
         self._typecheck_state(state)
 
         result = []
-        # possible_next_states = []
-        # states_count = []
 
         # Get all combinations of 3 nodes indices amongst N
         for indices in itertools.combinations(range(self.N), self.K):
@@ -298,7 +308,65 @@ class Game:
 
     # Functions to play the game step by step
 
-    def play(self, action):
+    def replay_solution(self, n, opt_policy, g_star):
+        for i in range(n):
+            state = self.state
+            opt_action = opt_policy[self.state_space.index(self.state)]
+            _, reward = self.play_action(opt_action)
+
+            if i % 100 == 0:
+                print(f"At t = {i}, in state {state}: \n"
+                      f"- playing optimal action {opt_action.name} for reward {reward}\n"
+                      f"- current average gain is {np.mean(self.reward_history)}\n" 
+                      f"               while g* = {g_star}")
+
+            #fig, ax = plt.subplots()
+            #ax.scatter(self.x, self.y, s=0)
+            #ax.text(
+            #    -0.3,
+            #    0.1,
+            #    f"Score: {self.score}\n"
+            #    f"t = {self.time}\n"
+            #    f"You just played {opt_action.name}\nand won {reward}",
+            #)
+            #for i in range(self.N):
+            #    ax.text(
+            #        self.x[i],
+            #        self.y[i],
+            #        self.state[i].creature_symbol,
+            #        bbox=dict(facecolor="blue", alpha=0.5),
+            #    )
+            #
+            #plt.show()
+
+    def play_interactive(self):
+        self.ax.scatter(self.x, self.y, s=0)
+
+        self.ax.text(-0.2, 0, "Use the buttons to play!")
+
+        for i in range(self.N):
+            self.ax.text(
+                self.x[i],
+                self.y[i],
+                self.state[i].creature_symbol,
+                bbox=dict(facecolor="blue", alpha=0.5),
+            )
+
+        axes = [plt.axes([0.3 + i * 0.1, 0.9, 0.1, 0.075]) for i in range(5)]
+        AR = Button(axes[0], "AR")
+        AR.on_clicked(self.play_AR)
+        AT = Button(axes[1], "AT")
+        AT.on_clicked(self.play_AT)
+        AD = Button(axes[2], "AD")
+        AD.on_clicked(self.play_AD)
+        BR = Button(axes[3], "BR")
+        BR.on_clicked(self.play_BR)
+        BT = Button(axes[4], "BT")
+        BT.on_clicked(self.play_BT)
+
+        plt.show()
+
+    def play_action(self, action):
         """Play action on current state of the game.
         Updates the board, score and histories."""
         self._typecheck_action(action)
@@ -311,21 +379,58 @@ class Game:
         self.action_history.append(action)
         self.state_history.append(self.state)
         self.score_history.append(self.score)
+        self.reward_history.append(reward)
 
-    def play_AR(self):
-        self.play(Action.AR)
+        return next_state, reward
 
-    def play_AT(self):
-        self.play(Action.AT)
+    def play_and_plot_action(self, action):
+        self._typecheck_action(action)
 
-    def play_AD(self):
-        self.play(Action.AD)
+        prev_state = self.state
 
-    def play_BR(self):
-        self.play(Action.BR)
+        next_state, reward = self.play_action(action)
 
-    def play_BT(self):
-        self.play(Action.BT)
+        modified_nodes = [
+            i for i in range(self.N) if next_state[i] != prev_state[i]
+        ]
+        # Clear and redraw the plot
+        self.ax.clear()
+        self.ax.scatter(self.x, self.y, s=0)
+        self.ax.text(
+            -0.3,
+            0.1,
+            f"Score: {self.score}\n"
+            f"t = {self.time}\n"
+            f"You just played {action.name}\nand won {reward}",
+        )
+        symbols = [n.creature_symbol for n in self.state]
+        for i, sym in enumerate(symbols):
+            if i in modified_nodes:
+                color = "red"
+            else:
+                color = "blue"
+            self.ax.text(
+                self.x[i],
+                self.y[i],
+                sym,
+                bbox=dict(facecolor=color, alpha=0.5),
+            )
+        plt.draw()
+
+    def play_AR(self, b):
+        self.play_and_plot_action(Action.AR)
+
+    def play_AT(self, b):
+        self.play_and_plot_action(Action.AT)
+
+    def play_AD(self, b):
+        self.play_and_plot_action(Action.AD)
+
+    def play_BR(self, b):
+        self.play_and_plot_action(Action.BR)
+
+    def play_BT(self, b):
+        self.play_and_plot_action(Action.BT)
 
     # Value iteration
 
@@ -362,7 +467,7 @@ class Game:
                     r = self.rewards[i, a.value, :]
 
                     # Compute sum over s'
-                    v_temp = np.sum([p * (r + v)])  # + 0.5 * v + 0.5 * p * v])
+                    v_temp = np.sum([p * (r + v_last)])  # + 0.5 * v + 0.5 * p * v])
 
                     # If better, save it, best action from s is a
                     if v_temp > v_new:
@@ -384,19 +489,3 @@ class Game:
 
     def print_score(self):
         print("score = ", self.score)
-
-    def plot_state(self):
-        angles = 2 * np.pi * np.array([n.index for n in self.state]) // self.N
-        x = np.sin(angles)
-        y = np.cos(angles)
-
-        plt.scatter(x, y, marker="o")
-
-        symbols = [n.creature_symbol for n in self.state]
-
-        for i in range(self.N):
-            plt.annotate(symbols[i], (x[i], y[i]))
-
-        plt.title(f"t = {self.time}, score = {self.score}")
-
-        plt.show()
