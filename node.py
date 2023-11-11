@@ -82,9 +82,3 @@ class Node:
 
     def copy(self):
         return Node(self.index, self.creature)
-
-
-# Environment class,
-# current attribute : state -> list of node
-#                     nb_state -> number of state
-#                     reward -> current number of points ?? (not used yet)

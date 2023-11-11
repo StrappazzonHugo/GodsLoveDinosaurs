@@ -9,6 +9,9 @@ from node import Node
 
 
 class Game:
+    """Class game containing all action functions (AR, AT, AD, BR, BT),
+       and plot function for the interactive game"""
+
     def __init__(self, N, K, W, L, CR, CT):
         for arg, arg_name in (
             (N, "N"),
@@ -86,17 +89,6 @@ class Game:
         angles = 2 * np.pi * np.array([n.index for n in self.state]) / self.N
         self.x = np.sin(angles)
         self.y = np.cos(angles)
-
-        # for i, s in enumerate(self.state_space[:20]):
-        #     for a in Action:
-        #         probas = self.probas[i, a.value]
-        #         for j, p in enumerate(probas):
-        #             if p > 0:
-        #                 print(
-        #                     f"State: {s}, action: {a.name} =[P = {p}]=> {self.state_space[j]}"
-        #                 )
-        #         print("_____")
-        #     print("============")
 
     @property
     def time(self):
@@ -404,16 +396,16 @@ class Game:
 
         plt.draw()
 
-    def play_AR(self, b):
+    def play_AR(self):
         self.play_and_plot_action(Action.AR)
 
-    def play_AT(self, b):
+    def play_AT(self):
         self.play_and_plot_action(Action.AT)
 
-    def play_AD(self, b):
+    def play_AD(self):
         self.play_and_plot_action(Action.AD)
 
-    def play_BR(self, b):
+    def play_BR(self):
         self.play_and_plot_action(Action.BR)
 
     def play_BT(self, b):
