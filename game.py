@@ -213,7 +213,7 @@ class Game:
             eaten_rabbits = 0
             eaten_tigers = 0
 
-            # Go through the nodes are these indices
+            # Go through the nodes at these indices
             for i in indices:
                 next_state[i].creature = Creature.Empty
 
@@ -314,43 +314,34 @@ class Game:
             opt_action = opt_policy[self.state_space.index(self.state)]
             _, reward = self.play_action(opt_action)
 
-            if i % (n//10) == 0:
-                print(f"At t = {i}, in state {state}: \n"
-                      f"- playing optimal action {opt_action.name} for reward {reward}\n"
-                      f"- current average gain is {np.mean(self.reward_history)}\n" 
-                      f"               while g* = {g_star}")
+            if i % (n // 10) == 0 or i < 20:
+                print(
+                    f"At t = {i}, in state {state}: \n"
+                    f"- playing optimal action {opt_action.name} for reward {reward}\n"
+                    f"- current average gain is {np.mean(self.reward_history)}\n"
+                    f"               while g* = {g_star}"
+                )
 
-            #fig, ax = plt.subplots()
-            #ax.scatter(self.x, self.y, s=0)
-            #ax.text(
-            #    -0.3,
-            #    0.1,
-            #    f"Score: {self.score}\n"
-            #    f"t = {self.time}\n"
-            #    f"You just played {opt_action.name}\nand won {reward}",
-            #)
-            #for i in range(self.N):
-            #    ax.text(
-            #        self.x[i],
-            #        self.y[i],
-            #        self.state[i].creature_symbol,
-            #        bbox=dict(facecolor="blue", alpha=0.5),
-            #    )
-            #
-            #plt.show()
+    def plot_state(self, colors=None):
+        if colors is None:
+            colors = ["blue" for _ in range(self.N)]
 
-    def play_interactive(self):
+        self.ax.clear()
+
         self.ax.scatter(self.x, self.y, s=0)
-
-        self.ax.text(-0.2, 0, "Use the buttons to play!")
 
         for i in range(self.N):
             self.ax.text(
                 self.x[i],
                 self.y[i],
                 self.state[i].creature_symbol,
-                bbox=dict(facecolor="blue", alpha=0.5),
+                bbox=dict(facecolor=colors[i], alpha=0.5),
             )
+
+    def play_interactive(self):
+        self.plot_state()
+
+        self.ax.text(-0.2, 0, "Use the buttons to play!")
 
         axes = [plt.axes([0.3 + i * 0.1, 0.9, 0.1, 0.075]) for i in range(5)]
         AR = Button(axes[0], "AR")
@@ -393,9 +384,16 @@ class Game:
         modified_nodes = [
             i for i in range(self.N) if next_state[i] != prev_state[i]
         ]
-        # Clear and redraw the plot
-        self.ax.clear()
-        self.ax.scatter(self.x, self.y, s=0)
+
+        colors = []
+        for i in range(self.N):
+            if i in modified_nodes:
+                colors.append("red")
+            else:
+                colors.append("blue")
+
+        self.plot_state(colors)
+
         self.ax.text(
             -0.3,
             0.1,
@@ -403,18 +401,7 @@ class Game:
             f"t = {self.time}\n"
             f"You just played {action.name}\nand won {reward}",
         )
-        symbols = [n.creature_symbol for n in self.state]
-        for i, sym in enumerate(symbols):
-            if i in modified_nodes:
-                color = "red"
-            else:
-                color = "blue"
-            self.ax.text(
-                self.x[i],
-                self.y[i],
-                sym,
-                bbox=dict(facecolor=color, alpha=0.5),
-            )
+
         plt.draw()
 
     def play_AR(self, b):
@@ -451,35 +438,70 @@ class Game:
         # Iteration counter
         n = 0
 
-        # Stopping condition on span
-        while np.max(v - v_last) - np.min(v - v_last) > epsilon:
-            v_last = v.copy()
+        ###########################################################
 
-            # Iterate over states
-            for i in range(self.card_S):
-                v_new = -1e6
-                ## best_a = None
+        ###################################
+        # These are equivalent
+        # Keep only the matrix one ?
+        ###################################
 
-                # Find best action
+        matrix = True
+
+        if matrix:
+            # Stopping condition on span
+            while np.max(v - v_last) - np.min(v - v_last) > epsilon:
+                v_last = v.copy()
+
+                # These are results for all (s, a)
+                vectors = np.empty((self.card_S, self.card_A))
+
                 for a in Action:
-                    # Get transition proba and reward from s under action a
-                    p = self.probas[i, a.value, :]
-                    r = self.rewards[i, a.value, :]
+                    # (s, s') matrices
+                    P = self.probas[:, a.value, :]
+                    R = self.rewards[:, a.value, :]
 
-                    # Compute sum over s'
-                    v_temp = np.sum([p * (r + v_last)])  # + 0.5 * v + 0.5 * p * v])
+                    # Component-wise mult for P and R, then sum over s'
+                    vectors[:, a.value] = np.sum(P * R, axis=1) + P @ v_last
 
-                    # If better, save it, best action from s is a
-                    if v_temp > v_new:
-                        v_new = v_temp
-                        ## best_a = a
+                # Component-wise max over a
+                v = np.max(vectors, axis = 1)
 
-                # Update
-                v[i] = v_new
-                ## opt_policy[i] = best_a
+                n += 1
 
-            # Count
-            n += 1
+        else:
+            # Stopping condition on span
+            while np.max(v - v_last) - np.min(v - v_last) > epsilon:
+                v_last = v.copy()
+
+                # Iterate over states
+                for i in range(self.card_S):
+                    v_new = -1e6
+                    ## best_a = None
+
+                    # Find best action
+                    for a in Action:
+                        # Get transition proba and reward from s under action a
+                        p = self.probas[i, a.value, :]
+                        r = self.rewards[i, a.value, :]
+
+                        # Compute sum over s'
+                        v_temp = np.sum(
+                            [p * (r + v_last)]
+                        )  # + 0.5 * v + 0.5 * p * v])
+
+                        # If better, save it, best action from s is a
+                        if v_temp > v_new:
+                            v_new = v_temp
+                            ## best_a = a
+
+                    # Update
+                    v[i] = v_new
+                    ## opt_policy[i] = best_a
+
+                # Count
+                n += 1
+
+        ################################################
 
         print(f"Iterated {n} times.")
 
@@ -498,7 +520,6 @@ class Game:
                     opt_policy[i] = a
 
         ## print(f"Changed {count} optimal actions") ##
-            
 
         return (v - v_last)[0], opt_policy
 
