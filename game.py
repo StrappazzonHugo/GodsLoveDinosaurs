@@ -422,12 +422,7 @@ class Game:
     # Value iteration
 
     def value_iteration(self, epsilon):
-        ###################
-        # PROBABLY WRONG!
-        # Not vectorial yet
-        ###################
-
-        """Returns (v_n+1 - v_n, π*)"""
+        """Returns (g*, π*)."""
         self.card_S = 3**self.N
 
         # Vectors of size |S|
@@ -440,86 +435,84 @@ class Game:
 
         ###########################################################
 
-        ###################################
-        # These are equivalent
-        # Keep only the matrix one ?
-        ###################################
+        periodic_fix = False
 
-        matrix = True
+        # Stopping condition on span
+        while np.max(v - v_last) - np.min(v - v_last) > epsilon:
+            v_last = v.copy()
 
-        if matrix:
-            # Stopping condition on span
-            while np.max(v - v_last) - np.min(v - v_last) > epsilon:
-                v_last = v.copy()
+            # These are results for all (s, a)
+            vectors = np.empty((self.card_S, self.card_A))
 
-                # These are results for all (s, a)
-                vectors = np.empty((self.card_S, self.card_A))
+            for a in Action:
+                # (s, s') matrices
+                P = self.probas[:, a.value, :]
+                R = self.rewards[:, a.value, :]
 
-                for a in Action:
-                    # (s, s') matrices
-                    P = self.probas[:, a.value, :]
-                    R = self.rewards[:, a.value, :]
+                # Component-wise mult for P and R, then sum over s'
+                vectors[:, a.value] = np.sum(P * R, axis=1)
 
-                    # Component-wise mult for P and R, then sum over s'
-                    vectors[:, a.value] = np.sum(P * R, axis=1) + P @ v_last
+                if periodic_fix:
+                    vectors[:, a.value] += 0.5 * P @ v_last + 0.5 * v_last
+                else:
+                    vectors[:, a.value] += P @ v_last
 
-                # Component-wise max over a
-                v = np.max(vectors, axis = 1)
+            # Component-wise max over a
+            v = np.max(vectors, axis=1)
 
-                n += 1
+            n += 1
 
-        else:
-            # Stopping condition on span
-            while np.max(v - v_last) - np.min(v - v_last) > epsilon:
-                v_last = v.copy()
-
-                # Iterate over states
-                for i in range(self.card_S):
-                    v_new = -1e6
-                    ## best_a = None
-
-                    # Find best action
-                    for a in Action:
-                        # Get transition proba and reward from s under action a
-                        p = self.probas[i, a.value, :]
-                        r = self.rewards[i, a.value, :]
-
-                        # Compute sum over s'
-                        v_temp = np.sum(
-                            [p * (r + v_last)]
-                        )  # + 0.5 * v + 0.5 * p * v])
-
-                        # If better, save it, best action from s is a
-                        if v_temp > v_new:
-                            v_new = v_temp
-                            ## best_a = a
-
-                    # Update
-                    v[i] = v_new
-                    ## opt_policy[i] = best_a
-
-                # Count
-                n += 1
+########################
+# Old non matrix version
+########################
+#        else:
+#            # Stopping condition on span
+#            while np.max(v - v_last) - np.min(v - v_last) > epsilon:
+#                v_last = v.copy()
+#
+#                # Iterate over states
+#                for i in range(self.card_S):
+#                    v_new = -1e6
+#
+#                    # Find best action
+#                    for a in Action:
+#                        # Get transition proba and reward from s under action a
+#                        p = self.probas[i, a.value, :]
+#                        r = self.rewards[i, a.value, :]
+#
+#                        # Compute sum over s'
+#                        v_temp = np.sum(
+#                            [p * (r + v_last)]
+#                        )  # + 0.5 * v + 0.5 * p * v])
+#
+#                        # If better, save it, best action from s is a
+#                        if v_temp > v_new:
+#                            v_new = v_temp
+#
+#                    # Update
+#                    v[i] = v_new
+#
+#                # Count
+#                n += 1
 
         ################################################
 
         print(f"Iterated {n} times.")
 
-        ## count = 0 ##
         for i in range(self.card_S):
             maxi = -1e6
             for a in Action:
                 p = self.probas[i, a.value, :]
                 r = self.rewards[i, a.value, :]
 
-                gain = np.sum([p * (r + v)])
+                if periodic_fix:
+                    gain = np.sum([p * (r + 0.5 * v) + 0.5 * v])
+                else:
+                    gain = np.sum([p * (r + v)])
+
                 if gain > maxi:
                     maxi = gain
-                    ## if opt_policy[i] != a: ##
-                    ##     count += 1 ##
                     opt_policy[i] = a
-
-        ## print(f"Changed {count} optimal actions") ##
 
         return (v - v_last)[0], opt_policy
 
