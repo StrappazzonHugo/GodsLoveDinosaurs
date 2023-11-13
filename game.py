@@ -10,7 +10,7 @@ from node import Node
 
 class Game:
     """Class game containing all action functions (AR, AT, AD, BR, BT),
-       and plot function for the interactive game"""
+    and plot function for the interactive game"""
 
     def __init__(self, N, K, W, L, CR, CT):
         for arg, arg_name in (
@@ -79,16 +79,6 @@ class Game:
         self.score_history = [self.score]
         self.reward_history = []
         self.action_history = []
-
-        # Create a plot
-        self.fig = plt.figure(figsize=(5, 5))
-        self.ax = self.fig.subplots()
-        self.ax.set_aspect("equal")
-
-        # Coordinates of nodes on the board
-        angles = 2 * np.pi * np.array([n.index for n in self.state]) / self.N
-        self.x = np.sin(angles)
-        self.y = np.cos(angles)
 
     @property
     def time(self):
@@ -269,12 +259,12 @@ class Game:
         return result
 
     def birth_rabbit(self, state):
-        """Apply one of action BR on state."""
+        """Apply action BR on state."""
         self._typecheck_state(state)
         return self.birth(state, Creature.Rabbit)
 
     def birth_tiger(self, state):
-        """Apply one of action BR on state."""
+        """Apply action BR oT state."""
         self._typecheck_state(state)
         return self.birth(state, Creature.Tiger)
 
@@ -300,21 +290,8 @@ class Game:
 
     # Functions to play the game step by step
 
-    def replay_solution(self, n, opt_policy, g_star):
-        for i in range(n):
-            state = self.state
-            opt_action = opt_policy[self.state_space.index(self.state)]
-            _, reward = self.play_action(opt_action)
-
-            if i % (n // 10) == 0 or i < 20:
-                print(
-                    f"At t = {i}, in state {state}: \n"
-                    f"- playing optimal action {opt_action.name} for reward {reward}\n"
-                    f"- current average gain is {np.mean(self.reward_history)}\n"
-                    f"               while g* = {g_star}"
-                )
-
     def plot_state(self, colors=None):
+        """Plot the board in the current state using colors."""
         if colors is None:
             colors = ["blue" for _ in range(self.N)]
 
@@ -331,6 +308,16 @@ class Game:
             )
 
     def play_interactive(self):
+        # Create a plot
+        self.fig = plt.figure(figsize=(5, 5))
+        self.ax = self.fig.subplots()
+        self.ax.set_aspect("equal")
+
+        # Coordinates of nodes on the board
+        angles = 2 * np.pi * np.array([n.index for n in self.state]) / self.N
+        self.x = np.sin(angles)
+        self.y = np.cos(angles)
+
         self.plot_state()
 
         self.ax.text(-0.2, 0, "Use the buttons to play!")
@@ -396,16 +383,16 @@ class Game:
 
         plt.draw()
 
-    def play_AR(self):
+    def play_AR(self, b):
         self.play_and_plot_action(Action.AR)
 
-    def play_AT(self):
+    def play_AT(self, b):
         self.play_and_plot_action(Action.AT)
 
-    def play_AD(self):
+    def play_AD(self, b):
         self.play_and_plot_action(Action.AD)
 
-    def play_BR(self):
+    def play_BR(self, b):
         self.play_and_plot_action(Action.BR)
 
     def play_BT(self, b):
@@ -454,38 +441,38 @@ class Game:
 
             n += 1
 
-########################
-# Old non matrix version
-########################
-#        else:
-#            # Stopping condition on span
-#            while np.max(v - v_last) - np.min(v - v_last) > epsilon:
-#                v_last = v.copy()
-#
-#                # Iterate over states
-#                for i in range(self.card_S):
-#                    v_new = -1e6
-#
-#                    # Find best action
-#                    for a in Action:
-#                        # Get transition proba and reward from s under action a
-#                        p = self.probas[i, a.value, :]
-#                        r = self.rewards[i, a.value, :]
-#
-#                        # Compute sum over s'
-#                        v_temp = np.sum(
-#                            [p * (r + v_last)]
-#                        )  # + 0.5 * v + 0.5 * p * v])
-#
-#                        # If better, save it, best action from s is a
-#                        if v_temp > v_new:
-#                            v_new = v_temp
-#
-#                    # Update
-#                    v[i] = v_new
-#
-#                # Count
-#                n += 1
+        ########################
+        # Old non matrix version
+        ########################
+        #        else:
+        #            # Stopping condition on span
+        #            while np.max(v - v_last) - np.min(v - v_last) > epsilon:
+        #                v_last = v.copy()
+        #
+        #                # Iterate over states
+        #                for i in range(self.card_S):
+        #                    v_new = -1e6
+        #
+        #                    # Find best action
+        #                    for a in Action:
+        #                        # Get transition proba and reward from s under action a
+        #                        p = self.probas[i, a.value, :]
+        #                        r = self.rewards[i, a.value, :]
+        #
+        #                        # Compute sum over s'
+        #                        v_temp = np.sum(
+        #                            [p * (r + v_last)]
+        #                        )  # + 0.5 * v + 0.5 * p * v])
+        #
+        #                        # If better, save it, best action from s is a
+        #                        if v_temp > v_new:
+        #                            v_new = v_temp
+        #
+        #                    # Update
+        #                    v[i] = v_new
+        #
+        #                # Count
+        #                n += 1
 
         ################################################
 
@@ -508,7 +495,39 @@ class Game:
 
         return (v - v_last)[0], opt_policy
 
-    # Printing and plotting functions
+    # Functions to check the optimal policy and g* value
 
-    def print_score(self):
-        print("score = ", self.score)
+    def replay_solution(self, n, opt_policy, g_star):
+        """Executes opt_policy step by step for n steps and compares the
+        averaged gain to g_star at regular intervals."""
+        for i in range(n):
+            state = self.state
+            opt_action = opt_policy[self.state_space.index(self.state)]
+            _, reward = self.play_action(opt_action)
+
+            if i % (n // 10) == 0 or i < 20:
+                print(
+                    f"At t = {i}, in state {state}: \n"
+                    f"- playing optimal action {opt_action.name} for reward {reward}\n"
+                    f"- current average gain is {np.mean(self.reward_history)}\n"
+                    f"               while g* = {g_star}"
+                )
+
+    def plot_average_gain(self, n, opt_policy, g_star):
+        """Executes opt_policy step by step for n steps and plots the
+        averaged gain up to that step and g_star."""
+        for i in range(n):
+            opt_action = opt_policy[self.state_space.index(self.state)]
+            _, _ = self.play_action(opt_action)
+
+        steps = list(range(n))[1:]
+        avg_gains = [np.mean(self.reward_history[:step]) for step in steps]
+
+        fig, ax = plt.subplots()
+        ax.plot(steps, avg_gains, label = "Mean gain")#, marker="x")
+        ax.hlines([g_star], [1], [n], label = "g*", colors=['r'], linestyles=["dotted"])
+        ax.set_title("Mean gain at step n and optimal gain g*")
+        ax.set_xlabel("Steps")
+        ax.set_ylabel("Gain")
+        ax.legend()
+        plt.show()

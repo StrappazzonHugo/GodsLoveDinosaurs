@@ -5,8 +5,9 @@ from game import Game
 
 
 class Modes(Enum):
-    PLAY = 0
-    SOLVE = 1
+    play = 0
+    solve = 1
+    check = 2
 
 
 EPSILON = 1e-4
@@ -34,19 +35,21 @@ def main(argv):
     """The default parameters are used if no parameter is specified when calling the main function"""
     print(
         "This script can be run using "
-        "'$ python3 ./main.py [play, solve] [N K W L CR CT] [epsilon]'.\n"
+        "'$ python3 ./main.py [play, solve, check] [N K W L CR CT] [epsilon]'.\n"
     )
 
     if len(argv) < 2:
-        mode = Modes.SOLVE
+        mode = Modes.solve
     else:
         if argv[1] == "solve":
-            mode = Modes.SOLVE
+            mode = Modes.solve
         elif argv[1] == "play":
-            mode = Modes.PLAY
+            mode = Modes.play
+        elif argv[1] == "check":
+            mode = Modes.check
         else:
             raise ValueError(
-                "First optional command-line argument should be 'solve' or 'play'."
+                "First optional command-line argument should be 'solve', 'play' or 'check."
             )
 
     if len(argv) >= 8:
@@ -61,19 +64,21 @@ def main(argv):
 
     print(
         f"Running in {mode.name} mode with parameters {params} "
-        + f"and epsilon = {epsilon}"
-        if mode == Modes.SOLVE
-        else ""
+        + (f"and epsilon = {epsilon}"
+        if mode in (Modes.solve, Modes.check)
+        else "")
     )
 
     env = Game(*params)
 
-    if mode == Modes.SOLVE:
+    if mode == Modes.solve:
         g_star, opt_policy = env.value_iteration(epsilon)
-
         print(f"Found optimal average gain g* = {g_star}.")
 
-        env.replay_solution(100000, opt_policy, g_star)
+    elif mode == Modes.check:
+        g_star, opt_policy = env.value_iteration(epsilon)
+        print(f"Found optimal average gain g* = {g_star}.")
+        env.plot_average_gain(2_000, opt_policy, g_star)
 
     else:
         env.play_interactive()
