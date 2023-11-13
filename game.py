@@ -412,9 +412,8 @@ class Game:
         # Iteration counter
         n = 0
 
-        ###########################################################
-
-        periodic_fix = False
+        # Make the MDP aperiodic (thanks for the tip!)
+        periodic_fix = True
 
         # Stopping condition on span
         while np.max(v - v_last) - np.min(v - v_last) > epsilon:
@@ -441,43 +440,43 @@ class Game:
 
             n += 1
 
-        ########################
-        # Old non matrix version
-        ########################
-        #        else:
-        #            # Stopping condition on span
-        #            while np.max(v - v_last) - np.min(v - v_last) > epsilon:
-        #                v_last = v.copy()
+        ################################
+        # Old scalar version, equivalent
+        ################################
+        # # Stopping condition on span
+        # while np.max(v - v_last) - np.min(v - v_last) > epsilon:
+        #     v_last = v.copy()
         #
-        #                # Iterate over states
-        #                for i in range(self.card_S):
-        #                    v_new = -1e6
+        #     # Iterate over states
+        #     for i in range(self.card_S):
+        #         v_new = -1e6
         #
-        #                    # Find best action
-        #                    for a in Action:
-        #                        # Get transition proba and reward from s under action a
-        #                        p = self.probas[i, a.value, :]
-        #                        r = self.rewards[i, a.value, :]
+        #         # Find best action
+        #         for a in Action:
+        #             # Get transition proba and reward from s under action a
+        #             p = self.probas[i, a.value, :]
+        #             r = self.rewards[i, a.value, :]
         #
-        #                        # Compute sum over s'
-        #                        v_temp = np.sum(
-        #                            [p * (r + v_last)]
-        #                        )  # + 0.5 * v + 0.5 * p * v])
+        #             # Compute sum over s'
+        #             v_temp = np.sum(
+        #                 [p * (r + v_last)]
+        #             )  # + 0.5 * v + 0.5 * p * v])
         #
-        #                        # If better, save it, best action from s is a
-        #                        if v_temp > v_new:
-        #                            v_new = v_temp
+        #             # If better, save it, best action from s is a
+        #             if v_temp > v_new:
+        #                 v_new = v_temp
         #
-        #                    # Update
-        #                    v[i] = v_new
+        #         # Update
+        #         v[i] = v_new
         #
-        #                # Count
-        #                n += 1
+        #     # Count
+        #     n += 1
 
         ################################################
 
         print(f"Iterated {n} times.")
 
+        # Get the optimal policy as argmax from last obtained v
         for i in range(self.card_S):
             maxi = -1e6
             for a in Action:
